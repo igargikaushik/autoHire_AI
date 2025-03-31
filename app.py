@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import sqlite3
 import datetime
 import os
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -13,6 +12,8 @@ ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}  # Allowed file extensions
 # Ensure the upload folder exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+from flask import session
 
 
 def get_db_connection():
@@ -147,6 +148,8 @@ def register():
 def login():
     """Login page."""
     if request.method == 'POST':
+        user_type = request.form.get('userType')
+
         username = request.form['username']
         password = request.form['password']
 
@@ -162,6 +165,8 @@ def login():
             session['user_type'] = user['user_type']
             flash('Login successful!', 'success')
             if user['user_type'] == 'company':
+                session['company_name'] = request.form.get('company_name')  # Store company name
+
                 return redirect(url_for('company_dashboard'))
             else:
                 return redirect(url_for('applicant_dashboard'))
@@ -191,6 +196,8 @@ def company_dashboard():
     cursor = conn.cursor()
     company_id = session['user_id']
 
+    # Get company name from session (ensure it's set during login/registration)
+
     # Get jobs posted by the company
     jobs = cursor.execute('SELECT * FROM jobs WHERE company_id = ?', (company_id,)).fetchall()
 
@@ -216,11 +223,16 @@ def company_dashboard():
     conn.close()
     return render_template(
         'company_dashboard.html',
+        company_name=session['company_name'],
+
         jobs=jobs,
         total_applications=total_applications,
         shortlisted_applications=shortlisted_applications,
         now=now
     )
+
+    
+    
 
 
 @app.route('/applicant_dashboard')
