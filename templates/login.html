@@ -7,8 +7,31 @@
 			<div class="card shadow-lg rounded-3">
 				<div class="card-body p-4 p-sm-5">
 					<h2 class="card-title text-center mb-4">Login</h2>
+					
+					<!-- Checkbox for selecting login type -->
+					<div class="mb-3">
+						<label class="form-label">Login as:</label>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="userType" id="companyLogin" value="company" onclick="toggleLoginFields()">
+							<label class="form-check-label" for="companyLogin">Company</label>
+						</div>
+						<div class="form-check">
+							<input class="form-check-input" type="radio" name="userType" id="applicantLogin" value="applicant" onclick="toggleLoginFields()" checked>
+							<label class="form-check-label" for="applicantLogin">Applicant</label>
+						</div>
+					</div>
+
+					<!-- Login Form -->
 					<form method="POST" action="{{ url_for('login') }}" class="needs-validation" novalidate>
-						<div class="form-floating mb-3">
+						<!-- Company Name Field (Hidden by Default) -->
+						<div id="companyNameField" class="form-floating mb-3" style="display: none;">
+							<input type="text" class="form-control" id="company_name" name="company_name"
+								placeholder="Enter company name">
+							<label for="company_name">Company Name</label>
+						</div>
+
+						<!-- Username Field -->
+						<div id="usernameField" class="form-floating mb-3">
 							<input type="text" class="form-control" id="username" name="username"
 								placeholder="Enter your username" required>
 							<label for="username">Username</label>
@@ -16,6 +39,8 @@
 								Please enter your username.
 							</div>
 						</div>
+
+						<!-- Password Field -->
 						<div class="form-floating mb-4">
 							<input type="password" class="form-control" id="password" name="password"
 								placeholder="Enter your password" required>
@@ -24,6 +49,7 @@
 								Please enter your password.
 							</div>
 						</div>
+
 						<div class="form-check mb-3">
 							<input class="form-check-input" type="checkbox" value="" id="rememberPassword">
 							<label class="form-check-label" for="rememberPassword">
@@ -32,15 +58,20 @@
 						</div>
 						<button class="btn btn-primary w-100 py-2" type="submit">Login</button>
 						<hr class="my-4">
-						<p class="text-center">Don't have an account? <a href="{{ url_for('register') }}">Register
-								here</a></p>
+						<p class="text-center">Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
 					</form>
 				</div>
 			</div>
 		</div>
 	</div>
 </div>
+
 <script>
+	function toggleLoginFields() {
+		let isCompany = document.getElementById("companyLogin").checked;
+		document.getElementById("companyNameField").style.display = isCompany ? "block" : "none";
+	}
+	
 	// Bootstrap form validation
 	(function () {
 		'use strict'
@@ -57,4 +88,5 @@
 			})
 	})()
 </script>
+
 {% endblock %}
