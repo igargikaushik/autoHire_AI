@@ -1,0 +1,54 @@
+Job_Title,Candidate,Similarity_Score
+Cybersecurity Analyst,C7226,0.8087184826532999
+Cybersecurity Analyst,C9919,0.8293830951054891
+Cybersecurity Analyst,C7093,0.824100136756897
+Cybersecurity Analyst,C4999,0.8181850711504618
+Cybersecurity Analyst,C7543,0.8158584435780843
+Cybersecurity Analyst,C2836,0.800224761168162
+Cybersecurity Analyst,C4460,0.8147121667861938
+Cybersecurity Analyst,C4024,0.8261896173159281
+Cybersecurity Analyst,C4507,0.8150468468666077
+Machine Learning Engineer,C7497,0.8357626994450887
+Machine Learning Engineer,C7226,0.8132900993029276
+Machine Learning Engineer,C9919,0.8139198223749796
+Machine Learning Engineer,C7093,0.824725608030955
+Machine Learning Engineer,C8564,0.8475167552630106
+Machine Learning Engineer,C7831,0.8605762521425883
+Machine Learning Engineer,C7228,0.8166404167811075
+Machine Learning Engineer,C2720,0.8588769833246866
+Machine Learning Engineer,C3017,0.8453943729400635
+Machine Learning Engineer,C3363,0.8069767753283182
+Machine Learning Engineer,C3557,0.8643413384755453
+Machine Learning Engineer,C7527,0.8391475081443787
+Machine Learning Engineer,C7231,0.8046461939811707
+Machine Learning Engineer,C9342,0.8404479622840881
+Machine Learning Engineer,C7230,0.8560397028923035
+Machine Learning Engineer,C3717,0.8227377931276957
+Machine Learning Engineer,C8398,0.8435903588930765
+Machine Learning Engineer,C9534,0.8268616795539856
+Machine Learning Engineer,C5339,0.8486623565355936
+Machine Learning Engineer,C7128,0.8337873419125875
+Machine Learning Engineer,C4573,0.8476277192433676
+Machine Learning Engineer,C2836,0.8261213302612305
+Machine Learning Engineer,C4460,0.8017799655596415
+Machine Learning Engineer,C5786,0.8085278868675232
+Machine Learning Engineer,C6384,0.8416250546773275
+Machine Learning Engineer,C8928,0.8100034793217977
+Machine Learning Engineer,C4760,0.8417671322822571
+Machine Learning Engineer,C4024,0.8028672337532043
+Machine Learning Engineer,C9533,0.8353349169095358
+Machine Learning Engineer,C8810,0.8454203208287557
+Machine Learning Engineer,C4507,0.8044934471448263
+Machine Learning Engineer,C1212,0.8710750142733256
+Machine Learning Engineer,C8760,0.8358120918273926
+Machine Learning Engineer,C8631,0.8261383970578512
+Machine Learning Engineer,C8886,0.8395074605941772
+DevOps Engineer,C7497,0.800472100575765
+DevOps Engineer,C7226,0.8139659365018209
+DevOps Engineer,C8564,0.8104281624158224
+DevOps Engineer,C7230,0.8071086208025614
+DevOps Engineer,C8398,0.8011534214019775
+DevOps Engineer,C4460,0.8028631806373596
+DevOps Engineer,C8928,0.8140918612480164
+DevOps Engineer,C1212,0.8138163685798645
+DevOps Engineer,C8886,0.8150717616081238
