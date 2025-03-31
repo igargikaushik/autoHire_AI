@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Apply for Job{% endblock %}
+{% block content %}
+<div class="container">
+	<div class="row justify-content-center mt-5">
+		<div class="col-12 col-md-8 col-lg-6">
+			<h1 class="text-center mb-4">Apply for {{ job.title }}</h1>
+			<div class="card shadow-lg">
+				<div class="card-body p-4 p-sm-5">
+					{% if application_status %}
+					<div class="alert alert-info" role="alert">
+						Your application status:
+						{% if application_status == 'applied' %}
+						<span class="badge bg-warning text-dark">Applied</span>
+						{% elif application_status == 'shortlisted' %}
+						<span class="badge bg-success">Shortlisted</span>
+						{% else %}
+						<span class="badge bg-danger">Not Shortlisted</span>
+						{% endif %}
+					</div>
+					{% else %}
+					<form method="POST" action="{{ url_for('apply_job', job_id=job.job_id) }}"
+						enctype="multipart/form-data" class="needs-validation" novalidate>
+						<div class="mb-3">
+							<label for="resume" class="form-label">Upload Your Resume</label>
+							<input class="form-control" type="file" id="resume" name="resume" accept=".pdf,.doc,.docx"
+								required>
+							<div class="invalid-feedback">
+								Please upload your resume in PDF, DOC, or DOCX format.
+							</div>
+							<small class="text-muted">File size should be less than 5MB.</small>
+						</div>
+						<button class="btn btn-primary w-100 py-2" type="submit">Submit Application</button>
+					</form>
+					{% endif %}
+					<div class="mt-4">
+						<a href="{{ url_for('applicant_dashboard') }}" class="btn btn-secondary w-100">
+							Back to Dashboard
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+	// Bootstrap form validation
+	(function () {
+		'use strict'
+		const forms = document.querySelectorAll('.needs-validation')
+		Array.prototype.slice.call(forms)
+			.forEach(function (form) {
+				form.addEventListener('submit', function (event) {
+					if (!form.checkValidity()) {
+						event.preventDefault()
+						event.stopPropagation()
+					}
+					const resumeInput = document.getElementById('resume');
+					if (resumeInput && resumeInput.files[0]) {
+						const fileSize = resumeInput.files[0].size; // in bytes
+						const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
+						if (fileSize > maxSizeInBytes) {
+							resumeInput.setCustomValidity('File size exceeds 5MB.');
+							event.preventDefault();
+							event.stopPropagation();
+						} else {
+							resumeInput.setCustomValidity('');
+						}
+					}
+					form.classList.add('was-validated')
+				}, false)
+			})
+	})()
+</script>
+{% endblock %}

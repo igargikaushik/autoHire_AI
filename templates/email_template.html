@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Job Application Update</title>
+	<style>
+		/* Email-specific CSS (consider inlining for best compatibility) */
+		body {
+			font-family: Arial, sans-serif;
+			background-color: #f4f4f4;
+			margin: 0;
+			padding: 0;
+			color: #333;
+			line-height: 1.6;
+		}
+
+		.container {
+			max-width: 600px;
+			margin: 20px auto;
+			padding: 20px;
+			background-color: #ffffff;
+			border-radius: 5px;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+		}
+
+		h1 {
+			color: #0078d7;
+			margin-bottom: 20px;
+			text-align: center;
+		}
+
+		p {
+			margin-bottom: 16px;
+		}
+
+		.message {
+			font-weight: bold;
+			color: #28a745;
+			/* Green for success */
+		}
+
+		.regards {
+			margin-top: 20px;
+			text-align: left;
+		}
+
+		.footer {
+			margin-top: 25px;
+			padding-top: 10px;
+			border-top: 1px solid #eeeeee;
+			text-align: center;
+			color: #777;
+			font-size: 0.8em;
+		}
+
+		.button {
+			display: inline-block;
+			padding: 10px 20px;
+			background-color: #007bff;
+			color: #ffffff;
+			text-decoration: none;
+			border-radius: 5px;
+			margin-top: 20px;
+			text-align: center;
+		}
+
+		.button:hover {
+			background-color: #0056b3;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container">
+		<h1>Job Application Update</h1>
+		<p>Dear {{ recipient_name }},</p>
+		<p class="message">
+			Congratulations! Your application for the position of {{ job_title }} has been shortlisted.
+		</p>
+		<p>
+			The hiring company, {{ company_name }}, will contact you soon to schedule the next
+			step in the interview process.
+		</p>
+		<p>
+			For more details about the job, you can visit the job posting here:
+			<a href="{{ job_url }}" class="button">View Job Details</a>
+		</p>
+		<p class="regards">
+			Sincerely,<br>
+			The Resume Shortlisting Platform
+		</p>
+		<div class="footer">
+			This is an automated notification. Please do not reply to this email.
+		</div>
+	</div>
+</body>
+
+</html>

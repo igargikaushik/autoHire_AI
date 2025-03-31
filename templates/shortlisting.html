@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Shortlist Candidates{% endblock %}
+{% block content %}
+<div class="container">
+	<div class="row justify-content-center mt-5">
+		<div class="col-12">
+			<h1 class="text-center mb-4">Applications for {{ job.title }}</h1>
+			{% if applications %}
+			<div class="table-responsive">
+				<table class="table table-striped">
+					<thead>
+						<tr>
+							<th>Applicant Name</th>
+							<th>Email</th>
+							<th>Resume</th>
+							<th>Applied Date</th>
+							<th>Status</th>
+							<th>Prediction Score</th>
+							<th>Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for application in applications %}
+						<tr>
+							<td>{{ application.username }}</td>
+							<td>{{ application.email }}</td>
+							<td>
+								<a href="{{ application.resume_path }}" target="_blank">View Resume</a>
+							</td>
+							<td>{{ application.applied_date }}</td>
+							<td>
+								{% if application.status == 'applied' %}
+								<span class="badge bg-warning text-dark">Applied</span>
+								{% elif application.status == 'shortlisted' %}
+								<span class="badge bg-success">Shortlisted</span>
+								{% else %}
+								<span class="badge bg-danger">Not Shortlisted</span>
+								{% endif %}
+							</td>
+							<td>{{ application.prediction_score }}</td>
+							<td>
+								<form method="POST" action="{{ url_for('shortlisting', job_id=job.job_id) }}">
+									<input type="hidden" name="applicant_id" value="{{ application.applicant_id }}">
+									<button type="submit" class="btn btn-success btn-sm" {% if
+										application.status=='shortlisted' or application.status=='not shortlisted' %}
+										disabled {% endif %}>
+										{% if application.status == 'shortlisted' %}
+										Shortlisted
+										{% elif application.status == 'not shortlisted' %}
+										Not Shortlisted
+										{% else %}
+										Shortlist
+										{% endif %}
+									</button>
+								</form>
+							</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+			{% else %}
+			<div class="alert alert-info" role="alert">
+				No applications for this job yet.
+			</div>
+			{% endif %}
+			<div class="mt-4">
+				<a href="{{ url_for('job_listings') }}" class="btn btn-secondary">
+					Back to Job Listings
+				</a>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

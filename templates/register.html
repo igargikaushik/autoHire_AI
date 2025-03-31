@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="container">
+	<div class="row justify-content-center mt-5">
+		<div class="col-12 col-md-8 col-lg-6 col-xl-5">
+			<div class="card shadow-lg rounded-3">
+				<div class="card-body p-4 p-sm-5">
+					<h2 class="card-title text-center mb-4">Register</h2>
+					<form method="POST" action="{{ url_for('register') }}" class="needs-validation" novalidate>
+						<div class="form-floating mb-3">
+							<input type="text" class="form-control" id="username" name="username"
+								placeholder="Enter your username" required>
+							<label for="username">Username</label>
+							<div class="invalid-feedback">
+								Please choose a username.
+							</div>
+						</div>
+						<div class="form-floating mb-3">
+							<input type="email" class="form-control" id="email" name="email"
+								placeholder="Enter your email" required>
+							<label for="email">Email</label>
+							<div class="invalid-feedback">
+								Please enter a valid email address.
+							</div>
+						</div>
+						<div class="form-floating mb-3">
+							<input type="password" class="form-control" id="password" name="password"
+								placeholder="Enter your password" required>
+							<label for="password">Password</label>
+							<div class="invalid-feedback">
+								Please create a password.
+							</div>
+						</div>
+						<div class="form-floating mb-3">
+							<input type="password" class="form-control" id="confirm_password" name="confirm_password"
+								placeholder="Confirm your password" required>
+							<label for="confirm_password">Confirm Password</label>
+							<div class="invalid-feedback">
+								Please confirm your password.
+							</div>
+						</div>
+						<div class="mb-3">
+							<label for="user_type" class="form-label">User Type:</label>
+							<select class="form-select" id="user_type" name="user_type" required>
+								<option value="" disabled selected>Select user type</option>
+								<option value="company">Hiring Company</option>
+								<option value="applicant">Applicant</option>
+							</select>
+							<div class="invalid-feedback">
+								Please select a user type.
+							</div>
+						</div>
+						<button class="btn btn-primary w-100 py-2" type="submit">Register</button>
+						<hr class="my-4">
+						<p class="text-center">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+	// Bootstrap form validation
+	(function () {
+		'use strict'
+		const forms = document.querySelectorAll('.needs-validation')
+		Array.prototype.slice.call(forms)
+			.forEach(function (form) {
+				form.addEventListener('submit', function (event) {
+					if (!form.checkValidity()) {
+						event.preventDefault()
+						event.stopPropagation()
+					}
+					form.classList.add('was-validated')
+				}, false)
+			})
+
+		const passwordInput = document.getElementById('password');
+		const confirmPasswordInput = document.getElementById('confirm_password');
+		const passwordMismatchFeedback = document.createElement('div');
+		passwordMismatchFeedback.className = 'invalid-feedback';
+		passwordMismatchFeedback.textContent = 'Passwords do not match.';
+		confirmPasswordInput.parentNode.appendChild(passwordMismatchFeedback);
+
+		confirmPasswordInput.addEventListener('input', function () {
+			if (passwordInput.value !== confirmPasswordInput.value) {
+				confirmPasswordInput.setCustomValidity('Passwords do not match.');
+				passwordMismatchFeedback.style.display = 'block';
+			} else {
+				confirmPasswordInput.setCustomValidity('');
+				passwordMismatchFeedback.style.display = 'none';
+			}
+		});
+	})()
+</script>
+{% endblock %}

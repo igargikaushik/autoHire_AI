@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="container">
+	<div class="row justify-content-center align-items-center text-center py-5">
+		<div class="col-md-8">
+			<h1 class="display-4 fw-bold mb-4">
+				Welcome to the Resume Shortlisting Platform
+			</h1>
+			<p class="lead text-muted mb-5">
+				Connecting talented applicants with great companies.
+				Streamlining the hiring process with our intelligent resume shortlisting technology.
+			</p>
+			<div class="d-flex justify-content-center gap-3">
+				{% if not session['user_id'] %}
+				<a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+					Get Started
+				</a>
+				<a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg">
+					Login
+				</a>
+				{% else %}
+				{% if session['user_type'] == 'company' %}
+				<a href="{{ url_for('company_dashboard') }}" class="btn btn-primary btn-lg">
+					Go to Dashboard
+				</a>
+				{% elif session['user_type'] == 'applicant' %}
+				<a href="{{ url_for('applicant_dashboard') }}" class="btn btn-primary btn-lg">
+					Go to Dashboard
+				</a>
+				{% endif %}
+				{% endif %}
+			</div>
+		</div>
+	</div>
+	<div class="row mt-5">
+		<div class="col-md-6">
+			<div class="card shadow-sm">
+				<div class="card-body p-4">
+					<h2 class="h4 mb-3">For Hiring Companies</h2>
+					<ul class="list-unstyled">
+						<li><i class="bi bi-check-circle-fill text-primary me-2"></i> Post job openings easily.</li>
+						<li><i class="bi bi-check-circle-fill text-primary me-2"></i> Automatically shortlist top
+							candidates.</li>
+						<li><i class="bi bi-check-circle-fill text-primary me-2"></i> Manage applications and send
+							emails.</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-6">
+			<div class="card shadow-sm">
+				<div class="card-body p-4">
+					<h2 class="h4 mb-3">For Job Applicants</h2>
+					<ul class="list-unstyled">
+						<li><i class="bi bi-check-circle-fill text-primary me-2"></i> Find relevant job listings.</li>
+						<li><i class="bi bi-check-circle-fill text-primary me-2"></i> Upload your resume and apply
+							quickly.</li>
+						<li><i class="bi bi-check-circle-fill text-primary me-2"></i> Track your application status.
+						</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

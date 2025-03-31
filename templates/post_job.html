@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Post a Job{% endblock %}
+{% block content %}
+<div class="container">
+	<div class="row justify-content-center mt-5">
+		<div class="col-12 col-md-10 col-lg-8">
+			<h1 class="text-center mb-4">Post a New Job</h1>
+			<form method="POST" action="{{ url_for('post_job') }}" class="needs-validation" novalidate>
+				<div class="form-floating mb-3">
+					<input type="text" class="form-control" id="title" name="title" placeholder="Enter job title"
+						required>
+					<label for="title">Job Title</label>
+					<div class="invalid-feedback">
+						Please enter the job title.
+					</div>
+				</div>
+				<div class="form-floating mb-3">
+					<textarea class="form-control" placeholder="Enter job description" id="description"
+						name="description" style="height: 150px;" required></textarea>
+					<label for="description">Job Description</label>
+					<div class="invalid-feedback">
+						Please enter the job description.
+					</div>
+				</div>
+				<div class="form-floating mb-3">
+					<textarea class="form-control" placeholder="Enter job requirements" id="requirements"
+						name="requirements" style="height: 100px;" required></textarea>
+					<label for="requirements">Job Requirements</label>
+					<div class="invalid-feedback">
+						Please enter the job requirements.
+					</div>
+				</div>
+				<div class="form-floating mb-3">
+					<input type="text" class="form-control" id="location" name="location"
+						placeholder="Enter job location" required>
+					<label for="location">Job Location</label>
+					<div class="invalid-feedback">
+						Please enter the job location.
+					</div>
+				</div>
+				<div class="form-floating mb-3">
+					<select class="form-select" id="job_type" name="job_type" required>
+						<option value="" disabled selected>Select job type</option>
+						<option value="full-time">Full-Time</option>
+						<option value="part-time">Part-Time</option>
+						<option value="contract">Contract</option>
+						<option value="internship">Internship</option>
+					</select>
+					<label for="job_type">Job Type</label>
+					<div class="invalid-feedback">
+						Please select the job type.
+					</div>
+				</div>
+				<div class="form-floating mb-3">
+					<input type="number" class="form-control" id="salary" name="salary" placeholder="Enter salary"
+						min="0" required>
+					<label for="salary">Salary (optional)</label>
+					<div class="invalid-feedback">
+						Please enter a valid salary.
+					</div>
+				</div>
+
+				<button class="btn btn-primary w-100 py-2" type="submit">Post Job</button>
+			</form>
+		</div>
+	</div>
+</div>
+<script>
+	// Bootstrap form validation
+	(function () {
+		'use strict'
+		const forms = document.querySelectorAll('.needs-validation')
+		Array.prototype.slice.call(forms)
+			.forEach(function (form) {
+				form.addEventListener('submit', function (event) {
+					if (!form.checkValidity()) {
+						event.preventDefault()
+						event.stopPropagation()
+					}
+					form.classList.add('was-validated')
+				}, false)
+			})
+	})()
+</script>
+{% endblock %}

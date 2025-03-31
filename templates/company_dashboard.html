@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Company Dashboard{% endblock %}
+{% block content %}
+<div class="container">
+	<div class="row justify-content-center mt-5">
+		<div class="col-12 col-md-10">
+			<h1 class="text-center mb-4">Company Dashboard</h1>
+			<div class="alert alert-info" role="alert">
+				Welcome, {{ session['username'] }}! Here's an overview of your activity.
+			</div>
+			<div class="row mb-4">
+				<div class="col-md-6">
+					<div class="card shadow-sm">
+						<div class="card-body">
+							<h2 class="card-title mb-3">Posted Jobs</h2>
+							<p class="card-text">
+								You have posted {{ jobs|length }} job(s).
+							</p>
+							<a href="{{ url_for('job_listings') }}" class="btn btn-primary">
+								View Your Jobs
+							</a>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card shadow-sm">
+						<div class="card-body">
+							<h2 class="card-title mb-3">Applications</h2>
+							<p class="card-text">
+								You have received a total of {{ total_applications }} applications.
+							</p>
+							<a href="{{ url_for('job_listings') }}" class="btn btn-secondary">
+								View Applications
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="card shadow-sm mb-4">
+				<div class="card-body">
+					<h2 class="card-title mb-3">Post a New Job</h2>
+					<p class="card-text">
+						Reach out to qualified candidates by posting a new job opening.
+					</p>
+					<a href="{{ url_for('post_job') }}" class="btn btn-success">
+						Post a New Job
+					</a>
+				</div>
+			</div>
+			{% if shortlisted_applications %}
+			<div class="card shadow-sm">
+				<div class="card-body">
+					<h2 class="card-title mb-3">Shortlisted Applications</h2>
+					<p class="card-text">Here are the details of the candidates that you have shortlisted:</p>
+					<ul class="list-group">
+						{% for application in shortlisted_applications %}
+						<li class="list-group-item">
+							<strong>Job Title:</strong> {{ application.title }}<br>
+							<strong>Applicant Name:</strong> {{ application.username }}<br>
+							<strong>Applicant Email:</strong> {{ application.email }}<br>
+							<strong>Resume:</strong> <a href="{{ application.resume_path }}" target="_blank">View
+								Resume</a>
+						</li>
+						{% endfor %}
+					</ul>
+				</div>
+			</div>
+			{% endif %}
+		</div>
+	</div>
+</div>
+{% endblock %}

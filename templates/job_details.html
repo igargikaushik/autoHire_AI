@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}{{ job.title }}{% endblock %}
+{% block content %}
+<div class="container">
+	<div class="row justify-content-center mt-5">
+		<div class="col-12 col-lg-8">
+			<div class="card shadow-lg">
+				<div class="card-body p-4 p-sm-5">
+					<h1 class="card-title mb-4">{{ job.title }}</h1>
+					<p class="mb-2"><strong>Company:</strong> {{ job.company_name }}</p>
+					<p class="mb-2"><strong>Location:</strong> {{ job.location }}</p>
+					<p class="mb-2"><strong>Job Type:</strong> {{ job.job_type }}</p>
+					<p class="mb-3"><strong>Posted On:</strong> {{ job.posted_date }}</p>
+
+					<h2 class="h4 mb-3">Job Description</h2>
+					<p class="card-text mb-4">{{ job.description | replace('\n', '<br>') | safe }}</p>
+
+					<h2 class="h4 mb-3">Job Requirements</h2>
+					<p class="card-text mb-4">{{ job.requirements | replace('\n', '<br>') | safe }}</p>
+
+					{% if session['user_type'] == 'applicant' %}
+					<div class="d-flex justify-content-end mt-4">
+						<a href="{{ url_for('apply_job', job_id=job.job_id) }}" class="btn btn-primary">
+							Apply Now
+						</a>
+					</div>
+					{% endif %}
+				</div>
+			</div>
+			<div class="mt-4">
+				<a href="{% if session['user_type'] == 'company' %}{{ url_for('job_listings') }}{% elif session['user_type'] == 'applicant' %}{{ url_for('applicant_dashboard') }}{% else %}{{ url_for('index') }}{% endif %}"
+					class="btn btn-secondary w-100">
+					Back to {% if session['user_type'] == 'company' %}Job Listings{% elif session['user_type'] ==
+					'applicant' %}Dashboard{% else %}Home{% endif %}
+				</a>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
