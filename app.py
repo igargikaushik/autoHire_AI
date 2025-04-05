@@ -1,13 +1,20 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory
 import sqlite3
-import datetime
+from datetime import datetime
 import os
+from werkzeug.utils import secure_filename
+from models.screening_pipeline import run_screening_pipeline
+from models.resume_parser import extract_and_clean_text
+from models.screening_pipeline import run_single_resume_screening
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 DATABASE = 'database.db'
-UPLOAD_FOLDER = 'uploads'  # Folder to store uploaded resumes
-ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}  # Allowed file extensions
+UPLOAD_FOLDER = 'data/CVs'
+JD_PATH = 'data/job_description.csv'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}  
 
 # Ensure the upload folder exists
 if not os.path.exists(UPLOAD_FOLDER):
@@ -102,12 +109,31 @@ def allowed_file(filename):
     """Checks if the file extension is allowed."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-now = datetime.datetime.now() # Pass current time to the templates
+now = datetime.now() 
 
 @app.route('/')
 def index():
     """Home page."""
     return render_template('index.html', now=now)
+
+
+
+
+
+
+@app.route("/run_screening")
+def run_screening():
+    jd_path = "data/job_description.csv"
+    resumes_folder = "data/CVs"
+
+    results = run_screening_pipeline(jd_path, resumes_folder)
+
+    return render_template("screening_results.html", candidates=results)
+
+
+
+
+
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -148,7 +174,6 @@ def register():
 def login():
     """Login page."""
     if request.method == 'POST':
-        user_type = request.form.get('userType')
 
         username = request.form['username']
         password = request.form['password']
@@ -183,6 +208,41 @@ def logout():
     flash('Logged out successfully!', 'success')
     return redirect(url_for('index'))
 
+
+from datetime import datetime
+
+@app.route('/upload_resume', methods=['GET', 'POST']) 
+def upload_resume():
+    status = None
+    score = None
+
+    if request.method == 'POST':
+        job_title = request.form.get('job_title')
+
+        file = request.files['resume']
+        if file and file.filename.endswith('.pdf'):
+            # Create unique filename using timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            original_filename = secure_filename(file.filename)
+            filename = f"{timestamp}_{original_filename}"
+            save_path = os.path.join('data/CVs', filename)
+            file.save(save_path)
+
+            parsed_resumes = {filename: extract_and_clean_text(save_path)}
+
+            # screening on this resume only
+            shortlisted, score_map = run_single_resume_screening(
+                jd_path='data/job_description.csv',
+                parsed_resumes=parsed_resumes
+            )
+
+            score = round(score_map.get(filename, 0) * 100, 2)
+            if filename in shortlisted:
+                status = "Shortlisted"
+            else:
+                status = f"Not Shortlisted "
+
+    return render_template('upload_resume.html', now=datetime.now(), status=status, score=score)
 
 
 @app.route('/company_dashboard')
@@ -455,4 +515,5 @@ def shortlisting(job_id):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 

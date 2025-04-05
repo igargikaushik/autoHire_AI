@@ -8,9 +8,17 @@
 			<div class="alert alert-info" role="alert">
 				Welcome, {{ session['username'] }}! Here's your dashboard.
 			</div>
+			<a href="{{ url_for('upload_resume') }}" class="btn btn-success mt-3">Upload Resume</a>
+
 			<div class="card shadow-sm mb-4">
 				<div class="card-body">
+					{% if session.resume_status %}
+    <div class="alert alert-info mt-3">
+        Resume Screening Result: <strong>{{ session.resume_status }}</strong>
+    </div>
+{% endif %}
 					<h2 class="card-title mb-3">Your Applications</h2>
+
 					{% if applications %}
 					<div class="table-responsive">
 						<table class="table table-striped">
