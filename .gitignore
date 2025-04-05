@@ -6,3 +6,9 @@
 *.DS_Store
 
 .vscode
+.env
+__pycache__/
+*.py[cod]
+*.so
+.cache/
+logs/
