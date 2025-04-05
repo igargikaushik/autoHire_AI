@@ -143,7 +143,7 @@ def register():
         username = request.form['username']
         password = request.form['password']
         email = request.form['email']
-        user_type = request.form['user_type']
+        user_type = request.form['userType']
         confirm_password = request.form['confirm_password']
 
         if password != confirm_password:
@@ -163,7 +163,7 @@ def register():
             return redirect(url_for('login'))
         except sqlite3.IntegrityError:
             flash('Username or email already exists.', 'danger')
-            return render_template('register.html')
+            return render_template('register.html', now=now)
         finally:
             conn.close()
 

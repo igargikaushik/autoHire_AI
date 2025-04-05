@@ -1,2 +1,7 @@
 Flask
 Werkzeug
+sentence_transformers
+numpy
+scikit-learn
+pandas
+PyMuPDF
