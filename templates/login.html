@@ -8,7 +8,12 @@
 				<div class="card-body p-4 p-sm-5">
 					<h2 class="card-title text-center mb-4">Login</h2>
 					
-					<!-- Checkbox for selecting login type -->
+					
+
+					<!-- Login Form -->
+					<form method="POST" action="{{ url_for('login') }}" class="needs-validation" novalidate>
+
+						<!-- Checkbox for selecting login type -->
 					<div class="mb-3">
 						<label class="form-label">Login as:</label>
 						<div class="form-check">
@@ -20,9 +25,6 @@
 							<label class="form-check-label" for="applicantLogin">Applicant</label>
 						</div>
 					</div>
-
-					<!-- Login Form -->
-					<form method="POST" action="{{ url_for('login') }}" class="needs-validation" novalidate>
 						<!-- Company Name Field (Hidden by Default) -->
 						<div id="companyNameField" class="form-floating mb-3" style="display: none;">
 							<input type="text" class="form-control" id="company_name" name="company_name"
