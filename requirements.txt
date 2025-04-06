@@ -1,2 +1,10 @@
 Flask
 Werkzeug
+SQLAlchemy>=1.4
+Flask-SQLAlchemy>=2.5
+sentence_transformers
+numpy
+scikit-learn
+pandas
+PyMuPDF
+python-dotenv
