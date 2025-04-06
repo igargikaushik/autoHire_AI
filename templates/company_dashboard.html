@@ -1,13 +1,17 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} 
 {% block title %}Company Dashboard{% endblock %}
+
 {% block content %}
 <div class="container">
 	<div class="row justify-content-center mt-5">
 		<div class="col-12 col-md-10">
 			<h1 class="text-center mb-4">Company Dashboard</h1>
+
 			<div class="alert alert-info" role="alert">
 				Welcome, {{ session['company_name'] }}! Here's an overview of your activity.
 			</div>
+
+			<!-- Posted Jobs Card -->
 			<div class="row mb-4">
 				<div class="col-md-6">
 					<div class="card shadow-sm">
@@ -16,18 +20,20 @@
 							<p class="card-text">
 								You have posted {{ jobs|length }} job(s).
 							</p>
-							<a href="{{ url_for('job_listings') }}" class="btn btn-primary">
-								View Your Jobs
+							<span class="text-muted">View Resume (disabled)</span>
+						<a>	View Your Jobs
 							</a>
 						</div>
 					</div>
 				</div>
+
+				<!-- Total Applications Card -->
 				<div class="col-md-6">
 					<div class="card shadow-sm">
 						<div class="card-body">
 							<h2 class="card-title mb-3">Applications</h2>
 							<p class="card-text">
-								You have received a total of {{ total_applications }} applications.
+								You have received a total of {{ total_applications }} application(s).
 							</p>
 							<a href="{{ url_for('job_listings') }}" class="btn btn-secondary">
 								View Applications
@@ -36,30 +42,71 @@
 					</div>
 				</div>
 			</div>
+
+			<!-- Post New Job Form -->
 			<div class="card shadow-sm mb-4">
 				<div class="card-body">
 					<h2 class="card-title mb-3">Post a New Job</h2>
 					<p class="card-text">
 						Reach out to qualified candidates by posting a new job opening.
 					</p>
-					<a href="{{ url_for('post_job') }}" class="btn btn-success">
-						Post a New Job
-					</a>
+					<form action="{{ url_for('post_job') }}" method="POST">
+						<div class="form-group">
+							<label>Title:</label>
+							<input type="text" name="title" class="form-control" required>
+						</div>
+
+						<div class="form-group">
+							<label>Description:</label>
+							<textarea name="description" class="form-control" required></textarea>
+						</div>
+
+						<div class="form-group">
+							<label>Skills & Experience:</label>
+							<textarea name="skills_and_experience" class="form-control" required></textarea>
+						</div>
+
+						<div class="form-group">
+							<label>Location:</label>
+							<input type="text" name="location" class="form-control" required>
+						</div>
+
+						<div class="form-group">
+							<label>Job Type:</label>
+							<input type="text" name="job_type" class="form-control" required>
+						</div>
+
+						<div class="form-group">
+							<label>Salary (optional):</label>
+							<input type="number" name="salary" step="0.01" class="form-control">
+						</div>
+
+						<button type="submit" class="btn btn-success mt-3">Post Job</button>
+					</form>
 				</div>
 			</div>
+
+			<!-- Shortlisted Applications Section -->
 			{% if shortlisted_applications %}
 			<div class="card shadow-sm">
 				<div class="card-body">
 					<h2 class="card-title mb-3">Shortlisted Applications</h2>
-					<p class="card-text">Here are the details of the candidates that you have shortlisted:</p>
+					<p class="card-text">Here are the details of candidates you have shortlisted:</p>
 					<ul class="list-group">
 						{% for application in shortlisted_applications %}
 						<li class="list-group-item">
-							<strong>Job Title:</strong> {{ application.title }}<br>
-							<strong>Applicant Name:</strong> {{ application.username }}<br>
-							<strong>Applicant Email:</strong> {{ application.email }}<br>
-							<strong>Resume:</strong> <a href="{{ application.resume_path }}" target="_blank">View
-								Resume</a>
+							<strong>Job Title:</strong> {{ application.job_title }}<br>
+							<strong>Applicant:</strong> {{ application.applicant_email or 'N/A' }}<br>
+							<strong>Score:</strong> {{ application.score }}%<br>
+							<strong>Resume:</strong>
+							<span class="text-muted">View Resume (disabled)</span>
+
+
+							{% if application.interview_datetime %}
+								<strong>Interview Scheduled:</strong> {{ application.interview_datetime }}
+							{% else %}
+								<em>No interview scheduled yet.</em>
+							{% endif %}
 						</li>
 						{% endfor %}
 					</ul>
