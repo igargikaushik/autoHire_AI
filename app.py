@@ -18,31 +18,30 @@ import uuid
 load_dotenv()
 
 app = Flask(__name__)
-@app.context_processor
-def inject_now():
-    from datetime import datetime
-    return {'now': datetime.now()}
 
 
 app.secret_key = os.urandom(24)
 DATABASE = 'database.db'
 JD_PATH = 'data/job_description.csv'
-UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
+UPLOAD_FOLDER = 'uploads'
 #app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}  
 
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
 
 
+
+@app.context_processor
+def inject_now():
+    from datetime import datetime
+    return {'now': datetime.now()}
+now = datetime.now() 
 
 def allowed_file(filename):
     """Checks if the file extension is allowed."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-now = datetime.now() 
 
 @app.route('/resume/<filename>')
 def serve_resume(filename):
@@ -155,28 +154,35 @@ def upload_resume():
     if 'user_id' not in session or session.get('user_type') != 'applicant':
         flash("Please log in as an applicant to upload a resume.", "warning")
         return redirect(url_for('login'))
+
     score = None
     status = None
     original_filename = None
 
     conn = get_db_connection()
     cursor = conn.cursor()
+    jobs = cursor.execute("SELECT job_id, title FROM jobs").fetchall()
 
     if request.method == 'POST':
-        job_title = request.form.get('job_title')
+        job_id_str = request.form.get('job_id')
+
+        # Validate job_id from dropdown
+        if not job_id_str or not job_id_str.isdigit():
+            flash("Please select a valid job from the dropdown.", "danger")
+            return redirect(url_for('upload_resume'))
+        job_id = int(job_id_str)
         file = request.files['resume']
 
         if file and file.filename.endswith('.pdf'):
-            # Create unique filename using timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             original_filename = secure_filename(file.filename)
             filename = f"{timestamp}_{original_filename}"
-            save_path = os.path.join('data/CVs', filename)
+            save_path = os.path.join('uploads', filename)
             file.save(save_path)
 
             parsed_resumes = {filename: extract_and_clean_text(save_path)}
 
-            # Screening only this resume
+            # run screening
             shortlisted, score_map = run_single_resume_screening(
                 jd_path='data/job_description.csv',
                 parsed_resumes=parsed_resumes
@@ -184,25 +190,20 @@ def upload_resume():
 
             score = round(score_map.get(filename, 0) * 100, 2)
             status = "shortlisted" if score >= 80 else "applied"
-
             applicant_id = session.get('user_id')
-            job_id = int(job_title) if job_title and job_title.isdigit() else None
 
             cursor.execute(
-                '''INSERT INTO applications (applicant_id, job_id, resume_path, status, score) 
+                '''INSERT INTO applications (applicant_id, job_id, resume_path, status, prediction_score)
                    VALUES (?, ?, ?, ?, ?)''',
                 (applicant_id, job_id, save_path, status, score)
             )
             conn.commit()
 
-            # Flash message
             if status == "shortlisted":
                 flash("Congrats! You’ve been shortlisted.", "success")
             else:
                 flash("Thanks for applying. We'll get back to you soon.", "info")
 
-    # Always fetch jobs for dropdown
-    jobs = cursor.execute("SELECT job_id, title FROM jobs").fetchall()
     conn.close()
 
     return render_template(
@@ -212,6 +213,7 @@ def upload_resume():
         filename=original_filename,
         jobs=jobs
     )
+
 
 
 
@@ -256,11 +258,6 @@ def company_dashboard():
         shortlisted_applications=shortlisted_applications,
        
     )
-
-
-    
-    
-
 
 @app.route('/applicant_dashboard')
 def applicant_dashboard():
@@ -443,7 +440,7 @@ def schedule_interview(application_id):
     conn.commit()
     conn.close()
 
-    # ---- Email Notification ---- #
+    '''# ---- Email Notification ---- #
     subject = "Interview Scheduled for Your Job Application"
     body = f"""
     Dear Applicant,
@@ -455,7 +452,7 @@ def schedule_interview(application_id):
     Regards,
     Recruitment Team
     """
-
+'''
     try:
         sender_email = os.environ.get("EMAIL_ADDRESS")
         sender_password = os.environ.get("EMAIL_PASSWORD")
@@ -541,11 +538,11 @@ def apply_job(job_id):
         if resume and allowed_file(resume.filename):
             ext = resume.filename.rsplit('.', 1)[1].lower()
             filename = f"{uuid.uuid4().hex}.{ext}"
-            relative_resume_path = os.path.join('uploads', filename)
-            resume.save(os.path.join(UPLOAD_FOLDER, filename))
+            resume_path = os.path.join('uploads', filename)
+            resume.save(resume_path)
             cursor.execute(
                  'INSERT INTO applications (applicant_id, job_id, resume_path) VALUES (?, ?, ?)',
-                   (applicant_id, job_id, relative_resume_path),
+                   (applicant_id, job_id, resume_path),
                    ) 
             conn.commit()
             conn.close()
@@ -570,7 +567,7 @@ def shortlisting(job_id):
     cursor = conn.cursor()
     company_id = session['user_id']
 
-    # Ensure the job belongs to the logged-in company
+    # ensure the job belongs to the logged-in company
     job = cursor.execute(
         'SELECT * FROM jobs WHERE job_id = ? AND company_id = ?', 
         (job_id, company_id)
@@ -583,7 +580,7 @@ def shortlisting(job_id):
     if request.method == 'POST':
         applicant_id = request.form['applicant_id']
 
-        # Check the current status
+        # check the current status
         application_status = cursor.execute(
             'SELECT status FROM applications WHERE job_id = ? AND applicant_id = ?', 
             (job_id, applicant_id)
