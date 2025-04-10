@@ -25,8 +25,9 @@
 							<td>{{ application.username }}</td>
 							<td>{{ application.email }}</td>
 							<td>
-								<a href="{{ application.resume_path }}" target="_blank">View Resume</a>
-							</td>
+								<a href="{{ url_for('serve_resume', filename=application.resume_path.replace('\\', '/').split('/')[-1]) }}" target="_blank">
+									📄 View Resume
+								</a>							</td>
 							<td>{{ application.applied_date }}</td>
 							<td>
 								{% if application.status == 'applied' %}

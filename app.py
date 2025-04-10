@@ -2,119 +2,55 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import sqlite3
 from datetime import datetime
 import os
+from flask import send_file
 from werkzeug.utils import secure_filename
 from models.screening_pipeline import run_screening_pipeline
 from models.resume_parser import extract_and_clean_text
 from models.screening_pipeline import run_single_resume_screening
+from flask import session
+import smtplib
+from email.mime.text import MIMEText
+from scripts.init_db import get_db_connection
+from utils.email_sender import send_email
+from dotenv import load_dotenv
+import uuid
+
+load_dotenv()
 
 app = Flask(__name__)
+
+
 app.secret_key = os.urandom(24)
 DATABASE = 'database.db'
-UPLOAD_FOLDER = 'data/CVs'
 JD_PATH = 'data/job_description.csv'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+UPLOAD_FOLDER = 'uploads'
+#app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}  
 
-# Ensure the upload folder exists
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
-from flask import session
 
 
-def get_db_connection():
-    """Gets a database connection."""
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
 
-
-def create_users_table():
-    """Creates the 'users' table in the database."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            user_type TEXT NOT NULL CHECK (user_type IN ('company', 'applicant'))
-        )
-    ''')
-
-    conn.commit()
-    conn.close()
-    print("Users table created (or already exists).")
-
-
-def create_jobs_table():
-    """Creates the 'jobs' table in the database."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS jobs (
-            job_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            description TEXT NOT NULL,
-            requirements TEXT NOT NULL,
-            location TEXT NOT NULL,
-            job_type TEXT NOT NULL,
-            salary REAL,
-            posted_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-            company_id INTEGER NOT NULL,
-            FOREIGN KEY (company_id) REFERENCES users (user_id)
-        )
-    ''')
-
-    conn.commit()
-    conn.close()
-    print("Jobs table created (or already exists).")
-
-
-def create_applications_table():
-    """Creates the 'applications' table in the database."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS applications (
-            application_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            applicant_id INTEGER NOT NULL,
-            job_id INTEGER NOT NULL,
-            resume_path TEXT NOT NULL,
-            applied_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-            status TEXT DEFAULT 'applied' CHECK (status IN ('applied', 'shortlisted', 'not shortlisted')),
-            prediction_score REAL,
-            FOREIGN KEY (applicant_id) REFERENCES users (user_id),
-            FOREIGN KEY (job_id) REFERENCES jobs (job_id)
-        )
-    ''')
-
-    conn.commit()
-    conn.close()
-    print("Applications table created (or already exists).")
-
-
-# Create the tables
-create_users_table()
-create_jobs_table()
-create_applications_table()
-
+@app.context_processor
+def inject_now():
+    from datetime import datetime
+    return {'now': datetime.now()}
+now = datetime.now() 
 
 def allowed_file(filename):
     """Checks if the file extension is allowed."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-now = datetime.now() 
+
+@app.route('/resume/<filename>')
+def serve_resume(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 @app.route('/')
 def index():
     """Home page."""
-    return render_template('index.html', now=now)
+    return render_template('index.html')
 
 
 
@@ -167,38 +103,40 @@ def register():
         finally:
             conn.close()
 
-    return render_template('register.html', now=now)
+    return render_template('register.html')
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST']) 
 def login():
+  
     """Login page."""
     if request.method == 'POST':
-
         username = request.form['username']
         password = request.form['password']
 
         conn = get_db_connection()
         user = conn.execute(
-            'SELECT * FROM users WHERE username = ? AND password = ?', (username, password)
+            'SELECT * FROM users WHERE username = ? AND password = ?', 
+            (username, password)
         ).fetchone()
         conn.close()
 
         if user:
-            session['user_id'] = user['user_id']
-            session['username'] = user['username']  # Store username in session
+            session['user_id'] = user['user_id']  # FIXED
+            session['username'] = user['username']
             session['user_type'] = user['user_type']
             flash('Login successful!', 'success')
-            if user['user_type'] == 'company':
-                session['company_name'] = request.form.get('company_name')  # Store company name
 
+            if user['user_type'] == 'company':
+                # Optionally fetch actual company_name from another table if you want
                 return redirect(url_for('company_dashboard'))
             else:
                 return redirect(url_for('applicant_dashboard'))
         else:
             flash('Invalid username or password', 'danger')
 
-    return render_template('login.html', now=now)
+    return render_template('login.html')
+
 
 
 @app.route('/logout')
@@ -209,45 +147,78 @@ def logout():
     return redirect(url_for('index'))
 
 
-from datetime import datetime
 
-@app.route('/upload_resume', methods=['GET', 'POST']) 
+
+@app.route('/upload_resume', methods=['GET', 'POST'])  
 def upload_resume():
-    status = None
+    if 'user_id' not in session or session.get('user_type') != 'applicant':
+        flash("Please log in as an applicant to upload a resume.", "warning")
+        return redirect(url_for('login'))
+
     score = None
+    status = None
+    original_filename = None
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    jobs = cursor.execute("SELECT job_id, title FROM jobs").fetchall()
 
     if request.method == 'POST':
-        job_title = request.form.get('job_title')
+        job_id_str = request.form.get('job_id')
 
+        # Validate job_id from dropdown
+        if not job_id_str or not job_id_str.isdigit():
+            flash("Please select a valid job from the dropdown.", "danger")
+            return redirect(url_for('upload_resume'))
+        job_id = int(job_id_str)
         file = request.files['resume']
+
         if file and file.filename.endswith('.pdf'):
-            # Create unique filename using timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             original_filename = secure_filename(file.filename)
             filename = f"{timestamp}_{original_filename}"
-            save_path = os.path.join('data/CVs', filename)
+            save_path = os.path.join('uploads', filename)
             file.save(save_path)
 
             parsed_resumes = {filename: extract_and_clean_text(save_path)}
 
-            # screening on this resume only
+            # run screening
             shortlisted, score_map = run_single_resume_screening(
                 jd_path='data/job_description.csv',
                 parsed_resumes=parsed_resumes
             )
 
             score = round(score_map.get(filename, 0) * 100, 2)
-            if filename in shortlisted:
-                status = "Shortlisted"
-            else:
-                status = f"Not Shortlisted "
+            status = "shortlisted" if score >= 80 else "applied"
+            applicant_id = session.get('user_id')
 
-    return render_template('upload_resume.html', now=datetime.now(), status=status, score=score)
+            cursor.execute(
+                '''INSERT INTO applications (applicant_id, job_id, resume_path, status, prediction_score)
+                   VALUES (?, ?, ?, ?, ?)''',
+                (applicant_id, job_id, save_path, status, score)
+            )
+            conn.commit()
+
+            if status == "shortlisted":
+                flash("Congrats! You’ve been shortlisted.", "success")
+            else:
+                flash("Thanks for applying. We'll get back to you soon.", "info")
+
+    conn.close()
+
+    return render_template(
+        'upload_resume.html',
+        status=status,
+        score=score,
+        filename=original_filename,
+        jobs=jobs
+    )
+
+
 
 
 @app.route('/company_dashboard')
 def company_dashboard():
-    """Company dashboard page."""
     if 'user_id' not in session or session['user_type'] != 'company':
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('index'))
@@ -255,22 +226,20 @@ def company_dashboard():
     conn = get_db_connection()
     cursor = conn.cursor()
     company_id = session['user_id']
+    company_name = session.get('company_name', 'Unknown Company')
 
-    # Get company name from session (ensure it's set during login/registration)
+    jobs = cursor.execute(
+        'SELECT * FROM jobs WHERE company_id = ?',
+        (company_id,)
+    ).fetchall()
 
-    # Get jobs posted by the company
-    jobs = cursor.execute('SELECT * FROM jobs WHERE company_id = ?', (company_id,)).fetchall()
+    total_applications = cursor.execute('''
+        SELECT COUNT(applications.application_id)
+        FROM applications
+        JOIN jobs ON applications.job_id = jobs.job_id
+        WHERE jobs.company_id = ?
+    ''', (company_id,)).fetchone()[0] or 0
 
-    # Get total applications for the company's jobs
-    total_applications = cursor.execute(
-        '''SELECT COUNT(applications.application_id) 
-           FROM applications 
-           JOIN jobs ON applications.job_id = jobs.job_id 
-           WHERE jobs.company_id = ?''',
-        (company_id,),
-    ).fetchone()[0] or 0
-
-    #get shortlisted applications
     shortlisted_applications = cursor.execute('''
         SELECT applications.*, users.username, users.email, jobs.title
         FROM applications
@@ -283,17 +252,12 @@ def company_dashboard():
     conn.close()
     return render_template(
         'company_dashboard.html',
-        company_name=session['company_name'],
-
+        company_name=company_name,
         jobs=jobs,
         total_applications=total_applications,
         shortlisted_applications=shortlisted_applications,
-        now=now
+       
     )
-
-    
-    
-
 
 @app.route('/applicant_dashboard')
 def applicant_dashboard():
@@ -318,15 +282,14 @@ def applicant_dashboard():
     # Get all jobs
     jobs = cursor.execute('SELECT jobs.*, users.username as company_name FROM jobs JOIN users ON jobs.company_id = users.user_id').fetchall()
     conn.close()
-    return render_template('applicant_dashboard.html', applications=applications, jobs=jobs, now=now)
+    return render_template('applicant_dashboard.html', applications=applications, jobs=jobs)
 
-
-@app.route('/post_job', methods=['GET', 'POST'])
+@app.route('/company/post_job', methods=['GET', 'POST'])
 def post_job():
-    """Post a new job page."""
-    if 'user_id' not in session or session['user_type'] != 'company':
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('index'))
+    # Ensure only logged-in company users can access this
+    if 'user_id' not in session or session.get('user_type') != 'company':
+        flash("Please log in as a company to post a job.", "warning")
+        return redirect(url_for('login'))  # or your home page
 
     if request.method == 'POST':
         title = request.form['title']
@@ -335,23 +298,21 @@ def post_job():
         location = request.form['location']
         job_type = request.form['job_type']
         salary = request.form['salary']
-        company_id = session['user_id']
+        company_id = session.get('user_id')  # Now safely guaranteed to be present
 
         conn = get_db_connection()
         cursor = conn.cursor()
-
-        cursor.execute(
-            '''INSERT INTO jobs (title, description, requirements, location, job_type, salary, company_id) 
-               VALUES (?, ?, ?, ?, ?, ?, ?)''',
-            (title, description, requirements, location, job_type, salary, company_id),
-        )
+        cursor.execute('''
+            INSERT INTO jobs (title, description, requirements, location, job_type, salary, company_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (title, description, requirements, location, job_type, salary, company_id))
         conn.commit()
         conn.close()
-        flash('Job posted successfully!', 'success')
-        return redirect(url_for('company_dashboard'))
 
-    return render_template('post_job.html', now=now)
+        flash("Job posted successfully!", "success")
+        return redirect(url_for('job_listings'))
 
+    return render_template('post_job.html')
 
 
 @app.route('/job_listings')
@@ -376,8 +337,141 @@ def job_listings():
     ).fetchall()
     conn.close()
     return render_template('job_listings.html', jobs=jobs, now=now)
+@app.route('/company/jobs')
+def view_jobs():
+    if 'user_id' not in session or session.get('user_type') != 'company':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    company_id = session.get('user_id')
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    jobs = cursor.execute(
+        '''SELECT * FROM jobs WHERE company_id = ?''',
+        (company_id,)
+    ).fetchall()
+    conn.close()
+
+    return render_template('view_jobs.html', jobs=jobs)
+
+@app.route('/delete_job/<int:job_id>', methods=['POST'])
+def delete_job(job_id):
+    if 'user_id' not in session or session['user_type'] != 'company':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('index'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Ensure the job belongs to the logged-in company
+    job = cursor.execute('SELECT * FROM jobs WHERE job_id = ? AND company_id = ?', (job_id, session['user_id'])).fetchone()
+    if not job:
+        conn.close()
+        flash('Job not found or unauthorized.', 'danger')
+        return redirect(url_for('job_listings'))
+
+    # Delete related applications first (to maintain foreign key integrity, if enforced)
+    cursor.execute('DELETE FROM applications WHERE job_id = ?', (job_id,))
+    cursor.execute('DELETE FROM jobs WHERE job_id = ?', (job_id,))
+    conn.commit()
+    conn.close()
+
+    flash('Job deleted successfully.', 'success')
+    return redirect(url_for('job_listings'))
 
 
+
+@app.route('/company/job/<int:job_id>/applicants')
+def view_applicants(job_id):
+    conn = get_db_connection()
+    applicants = conn.execute('''
+        SELECT a.*, u.username, u.email
+        FROM applications a
+        JOIN users u ON a.applicant_id = u.user_id
+        WHERE a.job_id = ?
+        ORDER BY prediction_score DESC
+    ''', (job_id,)).fetchall()
+    conn.close()
+    return render_template('view_applicants.html', applicants=applicants, job_id=job_id)
+
+
+'''@app.route('/view_resume/<int:applicant_id>')
+def view_resume(applicant_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Fetch resume path from applications table
+    cursor.execute('SELECT resume_path FROM applications WHERE applicant_id = ?', (applicant_id,))
+    result = cursor.fetchone()
+    conn.close()
+
+    if result:
+        relative_path = result['resume_path'].replace('\\', '/')  # ensure consistent slashes
+        full_path = os.path.join(os.getcwd(), relative_path)  # absolute path
+
+        if os.path.exists(full_path):
+            return send_file(full_path)
+        else:
+            return f"Resume file not found at {full_path}", 404
+    else:
+        return "Resume not found", 404'''
+
+
+@app.route('/schedule_interview/<int:application_id>', methods=['POST'])
+def schedule_interview(application_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Get the application and applicant email
+    cursor.execute('SELECT applicant_email, job_id FROM applications WHERE id = ?', (application_id,))
+    application = cursor.fetchone()
+
+    if not application:
+        flash('Application not found.', 'danger')
+        conn.close()
+        return redirect(url_for('company_dashboard'))
+
+    applicant_email = application['applicant_email']
+    job_id = application['job_id']
+
+    # Optionally update application status
+    cursor.execute('UPDATE applications SET interview_scheduled = 1 WHERE id = ?', (application_id,))
+    conn.commit()
+    conn.close()
+
+    '''# ---- Email Notification ---- #
+    subject = "Interview Scheduled for Your Job Application"
+    body = f"""
+    Dear Applicant,
+
+    Congratulations! You've been shortlisted and an interview has been scheduled for your job application (Job ID: {job_id}).
+
+    Please check your email/calendar for more details or await further instructions.
+
+    Regards,
+    Recruitment Team
+    """
+'''
+    try:
+        sender_email = os.environ.get("EMAIL_ADDRESS")
+        sender_password = os.environ.get("EMAIL_PASSWORD")
+
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = sender_email
+        msg["To"] = applicant_email
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+
+        flash('Interview scheduled and email sent to the applicant.', 'success')
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        flash('Interview scheduled but failed to send email.', 'warning')
+
+    return redirect(url_for('view_applicants', job_id=job_id))
 @app.route('/job_details/<int:job_id>')
 def job_details(job_id):
     """Job details page."""
@@ -401,7 +495,7 @@ def job_details(job_id):
     elif session.get('user_type') == 'company':
         return render_template('job_details.html', job=job)
     else:
-        return render_template('job_details.html', job=job, now=now)
+        return render_template('job_details.html', job=job)
 
 
 @app.route('/apply_job/<int:job_id>', methods=['GET', 'POST'])
@@ -442,14 +536,14 @@ def apply_job(job_id):
             flash('No resume selected.', 'danger')
             return render_template('apply_job.html', job=job)
         if resume and allowed_file(resume.filename):
-            filename = secure_filename(resume.filename)
-            resume_path = os.path.join(UPLOAD_FOLDER, filename)
+            ext = resume.filename.rsplit('.', 1)[1].lower()
+            filename = f"{uuid.uuid4().hex}.{ext}"
+            resume_path = os.path.join('uploads', filename)
             resume.save(resume_path)
-
             cursor.execute(
-                'INSERT INTO applications (applicant_id, job_id, resume_path) VALUES (?, ?, ?)',
-                (applicant_id, job_id, resume_path),
-            )
+                 'INSERT INTO applications (applicant_id, job_id, resume_path) VALUES (?, ?, ?)',
+                   (applicant_id, job_id, resume_path),
+                   ) 
             conn.commit()
             conn.close()
             flash('Application submitted successfully!', 'success')
@@ -462,7 +556,7 @@ def apply_job(job_id):
 
 
 
-@app.route('/shortlisting/<int:job_id>', methods=['GET', 'POST'])
+@app.route('/shortlisting/<int:job_id>', methods=['GET', 'POST']) 
 def shortlisting(job_id):
     """Shortlisting page for companies to view applications for a job."""
     if 'user_id' not in session or session['user_type'] != 'company':
@@ -473,23 +567,58 @@ def shortlisting(job_id):
     cursor = conn.cursor()
     company_id = session['user_id']
 
-    # Ensure the job belongs to the logged-in company
-    job = cursor.execute('SELECT * FROM jobs WHERE job_id = ? AND company_id = ?', (job_id, company_id)).fetchone()
+    # ensure the job belongs to the logged-in company
+    job = cursor.execute(
+        'SELECT * FROM jobs WHERE job_id = ? AND company_id = ?', 
+        (job_id, company_id)
+    ).fetchone()
+
     if not job:
         flash('Job not found or does not belong to your company.', 'danger')
         return redirect(url_for('job_listings'))
 
     if request.method == 'POST':
         applicant_id = request.form['applicant_id']
-        #check the current status.
-        application_status = cursor.execute('SELECT status from applications where job_id = ? AND applicant_id = ?', (job_id, applicant_id)).fetchone()[0]
+
+        # check the current status
+        application_status = cursor.execute(
+            'SELECT status FROM applications WHERE job_id = ? AND applicant_id = ?', 
+            (job_id, applicant_id)
+        ).fetchone()[0]
+
         if application_status == 'applied':
             cursor.execute(
                 'UPDATE applications SET status = "shortlisted" WHERE job_id = ? AND applicant_id = ?',
                 (job_id, applicant_id),
             )
             conn.commit()
-            flash('Applicant shortlisted.', 'success')
+
+            # Fetch candidate's email
+            user = cursor.execute(
+                'SELECT username, email FROM users WHERE user_id = ?',
+                (applicant_id,)
+            ).fetchone()
+            
+            if user and user['email']:
+                subject = f"Shortlisted for {job['title']}"
+                content = f"""
+Hi {user['username']},
+
+Congratulations! You've been shortlisted for the position of "{job['title']}" at {job['company_name'] if 'company_name' in job.keys() else 'the company'}.
+
+We will be in touch with the next steps soon.
+
+Best regards,  
+AutoHire AI Team
+"""
+                try:
+                    send_email(user['email'], subject, content)
+                    flash('Applicant shortlisted and notified via email.', 'success')
+                except Exception as e:
+                    flash(f'Applicant shortlisted, but email failed: {str(e)}', 'warning')
+            else:
+                flash('Applicant shortlisted. Email not available.', 'warning')
+
         elif application_status == 'shortlisted':
             cursor.execute(
                 'UPDATE applications SET status = "not shortlisted" WHERE job_id = ? AND applicant_id = ?',
@@ -497,6 +626,7 @@ def shortlisting(job_id):
             )
             conn.commit()
             flash('Applicant Not Shortlisted.', 'success')
+
         else:
             flash('Applicant already shortlisted or not shortlisted.', 'warning')
 
@@ -509,9 +639,17 @@ def shortlisting(job_id):
            WHERE applications.job_id = ?''',
         (job_id,),
     ).fetchall()
+
     conn.close()
     return render_template('shortlisting.html', job=job, applications=applications)
 
+@app.route('/test_email')
+def test_email():
+    try:
+        send_email('ggkaushik2004@gmail.com', 'Test Email', ' a test email from Flask to check the email-notifier...')
+        return 'Test email sent successfully.'
+    except Exception as e:
+        return f'Error sending email: {e}'
 
 if __name__ == '__main__':
     app.run(debug=True)

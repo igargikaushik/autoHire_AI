@@ -1,7 +1,11 @@
 Flask
 Werkzeug
-sentence_transformers
-numpy
-scikit-learn
-pandas
+python-dotenv
 PyMuPDF
+scikit-learn
+sentence-transformers
+nltk
+pandas
+numpy
+email-validator
+gunicorn

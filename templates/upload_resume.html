@@ -9,29 +9,14 @@
     <form method="POST" enctype="multipart/form-data" action="{{ url_for('upload_resume') }}">
         <div class="mb-3">
             <label for="job_id" class="form-label">Select the job you're applying for</label>
-            <select class="form-select" id="job_id" name="job_id" required>
+            <select class="form-select" name="job_id" required>
                 <option value="">-- Choose a job --</option>
-                <option>Software Engineer</option>
-                <option>Data Scientist</option>
-                <option>Product Manager</option>
-                <option>Cloud Engineer</option>
-                <option>Cybersecurity Analyst</option>
-                <option>Machine Learning Engineer</option>
-                <option>DevOps Engineer</option>
-                <option>Full Stack Developer</option>
-                <option>Big Data Engineer</option>
-                <option>AI Researcher</option>
-                <option>Database Administrator</option>
-                <option>Network Engineer</option>
-                <option>Software Architect</option>
-                <option>Blockchain Developer</option>
-                <option>IT Project Manager</option>
-                <option>Business Intelligence Analyst</option>
-                <option>Robotics Engineer</option>
-                <option>Embedded Systems Engineer</option>
-                <option>Quality Assurance Engineer</option>
-                <option>UX/UI Designer</option>
-            </select>
+                {% for job in jobs %}
+                  <option value="{{ job.job_id }}">{{ job.title }}</option>
+                {% endfor %}
+              </select>
+            
+            
         </div>
         <div class="mb-3">
             <label for="resume" class="form-label">Choose your resume (PDF/DOCX)</label>

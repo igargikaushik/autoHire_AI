@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}View Applicants{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Applicants for "{{ job.title }}"</h1>
+
+    {% if applicants %}
+        <ul class="list-group">
+            {% for app in applicants %}
+            <li class="list-group-item">
+                <p><strong>Applicant:</strong> {{ app.username }} ({{ app.email }})</p>
+                <p><strong>Score:</strong> {{ '%.2f'|format(app.prediction_score * 100) }}%</p>
+                <p><strong>Resume:</strong>
+                    <a href="{{ url_for('serve_resume', filename=app.resume_path.split('/')[-1]) }}" target="_blank">
+                        📄 View Resume
+                    </a>
+                </p>
+                {% if app.interview_datetime %}
+                    <p><strong>Interview Scheduled:</strong> {{ app.interview_datetime }}</p>
+                {% else %}
+                    <form action="{{ url_for('schedule_interview', application_id=app.id) }}" method="POST" class="form-inline">
+                        <label for="interview_datetime_{{ app.id }}" class="mr-2">Schedule Interview:</label>
+                        <input type="datetime-local" name="interview_datetime" id="interview_datetime_{{ app.id }}" class="form-control mr-2" required>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Schedule</button>
+                    </form>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No applications submitted yet.</p>
+    {% endif %}
+
+    <a href="{{ url_for('job_listings') }}" class="btn btn-secondary mt-4">← Back to Job Listings</a>
+</div>
+{% endblock %}
