@@ -9,6 +9,10 @@
 				Welcome, {{ session['username'] }}! Here's your dashboard.
 			</div>
 			<a href="{{ url_for('upload_resume') }}" class="btn btn-success mt-3">Upload Resume</a>
+			<!--disabled for now.. upload resume to calc score , will enable in future  -->
+			<p class="card-subtitle mb-2 text-muted">
+				"Calculate your resume score"
+			</p>
 
 			<div class="card shadow-sm mb-4">
 				<div class="card-body">
@@ -63,6 +67,10 @@
 			<div class="card shadow-sm">
 				<div class="card-body">
 					<h2 class="card-title mb-3">Available Jobs</h2>
+					
+					<p class="card-subtitle mb-2 text-muted">
+						In order to display your resume score, appply via above 'Upload Resume' button
+					</p>
 					{% if jobs %}
 					<div class="row">
 						{% for job in jobs %}
