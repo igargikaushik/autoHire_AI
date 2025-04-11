@@ -78,7 +78,7 @@ cd autoHire_AI
 ### Install the Required Python Packages:
 
 ``` bash
-pip/pip3 install requirements.txt
+pip/pip3 install -r requirements.txt
 ```
 
 ### Set Up the Database:
