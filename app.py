@@ -117,10 +117,6 @@ def index():
     return render_template('index.html', now=now)
 
 
-
-
-
-
 @app.route("/run_screening")
 def run_screening():
     jd_path = "data/job_description.csv"
@@ -129,11 +125,6 @@ def run_screening():
     results = run_screening_pipeline(jd_path, resumes_folder)
 
     return render_template("screening_results.html", candidates=results)
-
-
-
-
-
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -291,9 +282,6 @@ def company_dashboard():
         now=now
     )
 
-    
-    
-
 
 @app.route('/applicant_dashboard')
 def applicant_dashboard():
@@ -348,7 +336,7 @@ def post_job():
         conn.commit()
         conn.close()
         flash('Job posted successfully!', 'success')
-        return redirect(url_for('company_dashboard'))
+        return redirect(url_for('company_dashboard'), now=now)
 
     return render_template('post_job.html', now=now)
 
