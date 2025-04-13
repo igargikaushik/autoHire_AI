@@ -24,6 +24,8 @@ app.secret_key = os.urandom(24)
 DATABASE = 'database.db'
 JD_PATH = 'data/job_description.csv'
 UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 #app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
@@ -168,7 +170,7 @@ def upload_resume():
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             original_filename = secure_filename(file.filename)
             filename = f"{timestamp}_{original_filename}"
-            save_path = os.path.join('uploads', filename)
+            save_path = os.path.join(UPLOAD_FOLDER, filename)
             file.save(save_path)
 
             parsed_resumes = {filename: extract_and_clean_text(save_path)}
