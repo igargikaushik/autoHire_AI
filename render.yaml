@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: autohire-ai
+    env: python
+    buildCommand: ""
+    startCommand: gunicorn app:app
+    plan: free
+    region: oregon
+    runtime: python
+    branch: main  
+    repo: https://github.com/igargikaushik/autoHire_AI
