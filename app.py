@@ -644,7 +644,6 @@ def test_email():
     except Exception as e:
         return f'Error sending email: {e}'
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
 
 
